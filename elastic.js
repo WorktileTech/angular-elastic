@@ -17,9 +17,6 @@ angular.module('monospaced.elastic', [])
 
             return {
                 require: 'ngModel',
-                scope:{
-                    maxHeight:'='
-                },
                 restrict: 'A, C',
                 link: function(scope, element, attrs, ngModel) {
 
@@ -72,7 +69,7 @@ angular.module('monospaced.elastic', [])
                         minHeightValue = parseInt(taStyle.getPropertyValue('min-height'), 10),
                         heightValue = parseInt(taStyle.getPropertyValue('height'), 10),
                         minHeight = Math.max(minHeightValue, heightValue) - boxOuter.height,
-                        maxHeight = parseInt(taStyle.getPropertyValue('max-height'), 10),
+                        maxHeight = scope.maxHeight?scope.maxHeight:parseInt(taStyle.getPropertyValue('max-height'), 10),
                         mirrored,
                         active,
                         copyStyle = ['font-family',
@@ -192,6 +189,9 @@ angular.module('monospaced.elastic', [])
                     $win.bind('resize', forceAdjust);
 
                     scope.$watch(function() {
+                        if(scope.maxHeight && scope.maxHeight!= maxHeight){
+                            maxHeight = scope.maxHeight
+                        }
                         return ngModel.$modelValue;
                     }, function(newValue) {
                         forceAdjust();
@@ -200,10 +200,6 @@ angular.module('monospaced.elastic', [])
                     scope.$on('elastic:adjust', function() {
                         initMirror();
                         forceAdjust();
-                    });
-
-                    scope.$watch('maxHeight',function(n,o) {
-                        if(n)maxHeight = n;
                     });
 
                     $timeout(function(){adjust},5000);
