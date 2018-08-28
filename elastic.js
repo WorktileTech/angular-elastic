@@ -5,20 +5,30 @@
  */
 
 angular.module('monospaced.elastic', [])
+    .provider('msdElasticProvider', [function () {
 
+        const _self = this;
+
+        this.runAngularOutside = null;
+
+        this.setRunAngularOutsideFn = function (fn) {
+            _self.runAngularOutside = fn;
+        };
+
+    }])
     .constant('msdElasticConfig', {
         append: ''
     })
 
     .directive('msdElastic', [
-        '$timeout', '$window', 'msdElasticConfig',
-        function($timeout, $window, config) {
+        '$timeout', '$window', 'msdElasticConfig', 'msdElasticProvider',
+        function ($timeout, $window, config, msdElasticProvider) {
             'use strict';
 
             return {
                 require: 'ngModel',
                 restrict: 'A, C',
-                link: function(scope, element, attrs, ngModel) {
+                link: function (scope, element, attrs, ngModel) {
 
                     // cache a reference to the DOM element
                     var ta = element[0],
@@ -56,20 +66,20 @@ angular.module('monospaced.elastic', [])
                         borderBox = taStyle.getPropertyValue('box-sizing') === 'border-box' ||
                             taStyle.getPropertyValue('-moz-box-sizing') === 'border-box' ||
                             taStyle.getPropertyValue('-webkit-box-sizing') === 'border-box',
-                        boxOuter = !borderBox ? {width: 0, height: 0} : {
-                            width:  parseInt(taStyle.getPropertyValue('border-right-width'), 10) +
-                            parseInt(taStyle.getPropertyValue('padding-right'), 10) +
-                            parseInt(taStyle.getPropertyValue('padding-left'), 10) +
-                            parseInt(taStyle.getPropertyValue('border-left-width'), 10),
+                        boxOuter = !borderBox ? { width: 0, height: 0 } : {
+                            width: parseInt(taStyle.getPropertyValue('border-right-width'), 10) +
+                                parseInt(taStyle.getPropertyValue('padding-right'), 10) +
+                                parseInt(taStyle.getPropertyValue('padding-left'), 10) +
+                                parseInt(taStyle.getPropertyValue('border-left-width'), 10),
                             height: parseInt(taStyle.getPropertyValue('border-top-width'), 10) +
-                            parseInt(taStyle.getPropertyValue('padding-top'), 10) +
-                            parseInt(taStyle.getPropertyValue('padding-bottom'), 10) +
-                            parseInt(taStyle.getPropertyValue('border-bottom-width'), 10)
+                                parseInt(taStyle.getPropertyValue('padding-top'), 10) +
+                                parseInt(taStyle.getPropertyValue('padding-bottom'), 10) +
+                                parseInt(taStyle.getPropertyValue('border-bottom-width'), 10)
                         },
                         minHeightValue = parseInt(taStyle.getPropertyValue('min-height'), 10),
                         heightValue = parseInt(taStyle.getPropertyValue('height'), 10),
                         minHeight = Math.max(minHeightValue, heightValue) - boxOuter.height,
-                        maxHeight = scope.maxHeight?scope.maxHeight:parseInt(taStyle.getPropertyValue('max-height'), 10),
+                        maxHeight = scope.maxHeight ? scope.maxHeight : parseInt(taStyle.getPropertyValue('max-height'), 10),
                         mirrored,
                         active,
                         copyStyle = ['font-family',
@@ -110,7 +120,7 @@ angular.module('monospaced.elastic', [])
                         mirrored = ta;
                         // copy the essential styles from the textarea to the mirror
                         taStyle = getComputedStyle(ta);
-                        angular.forEach(copyStyle, function(val) {
+                        angular.forEach(copyStyle, function (val) {
                             mirrorStyle += val + ':' + taStyle.getPropertyValue(val) + ';';
                         });
                         mirror.setAttribute('style', mirrorStyle);
@@ -162,7 +172,7 @@ angular.module('monospaced.elastic', [])
                             }
 
                             // small delay to prevent an infinite loop
-                            $timeout(function() {
+                            $timeout(function () {
                                 active = false;
                             }, 1);
 
@@ -178,37 +188,45 @@ angular.module('monospaced.elastic', [])
                      * initialise
                      */
 
-                    // listen
-                    if ('onpropertychange' in ta && 'oninput' in ta) {
-                        // IE9
-                        ta['oninput'] = ta.onkeyup = adjust;
+                    var listen = function () {
+                        // listen
+                        if ('onpropertychange' in ta && 'oninput' in ta) {
+                            // IE9
+                            ta['oninput'] = ta.onkeyup = adjust;
+                        } else {
+                            ta['oninput'] = adjust;
+                        }
+                        $win.bind('resize', forceAdjust);
+                    };
+
+                    if (msdElasticProvider.runAngularOutside) {
+                        msdElasticProvider.runAngularOutside(() => {
+                            listen();
+                        });
                     } else {
-                        ta['oninput'] = adjust;
+                        listen();
                     }
-
-                    $win.bind('resize', forceAdjust);
-
-                    scope.$watch(function() {
-                        if(scope.maxHeight && scope.maxHeight!= maxHeight){
+                    scope.$watch(function () {
+                        if (scope.maxHeight && scope.maxHeight != maxHeight) {
                             maxHeight = scope.maxHeight
                         }
                         return ngModel.$modelValue;
-                    }, function(newValue) {
+                    }, function (newValue) {
                         forceAdjust();
                     });
 
-                    scope.$on('elastic:adjust', function() {
+                    scope.$on('elastic:adjust', function () {
                         initMirror();
                         forceAdjust();
                     });
 
-                    $timeout(function(){adjust},5000);
+                    $timeout(function () { adjust }, 5000);
 
                     /*
                      * destroy
                      */
 
-                    scope.$on('$destroy', function() {
+                    scope.$on('$destroy', function () {
                         $mirror.remove();
                         $win.unbind('resize', forceAdjust);
                     });
