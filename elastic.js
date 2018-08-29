@@ -9,12 +9,18 @@ angular.module('monospaced.elastic', [])
 
         const _self = this;
 
-        this.runAngularOutside = null;
+        this.ngZone = null;
 
-        this.setRunAngularOutsideFn = function (fn) {
-            _self.runAngularOutside = fn;
+        this.$get = function () {
+            return {
+                getNgZone: function () {
+                    return _self.ngZone;
+                },
+                setNgZoneProvider: function (ngZone) {
+                    _self.ngZone = ngZone;
+                }
+            };
         };
-
     }])
     .constant('msdElasticConfig', {
         append: ''
@@ -26,7 +32,7 @@ angular.module('monospaced.elastic', [])
             'use strict';
 
             return {
-                require: 'ngModel',
+                // require: 'ngModel',
                 restrict: 'A, C',
                 link: function (scope, element, attrs, ngModel) {
 
@@ -199,8 +205,8 @@ angular.module('monospaced.elastic', [])
                         $win.bind('resize', forceAdjust);
                     };
 
-                    if (msdElasticProvider.runAngularOutside) {
-                        msdElasticProvider.runAngularOutside(() => {
+                    if (msdElasticProvider.getNgZone()) {
+                        msdElasticProvider.getNgZone().runOutsideAngular(() => {
                             listen();
                         });
                     } else {
@@ -208,9 +214,9 @@ angular.module('monospaced.elastic', [])
                     }
                     scope.$watch(function () {
                         if (scope.maxHeight && scope.maxHeight != maxHeight) {
-                            maxHeight = scope.maxHeight
+                            maxHeight = scope.maxHeight;
                         }
-                        return ngModel.$modelValue;
+                        return ngModel ? ngModel.$modelValue : null;
                     }, function (newValue) {
                         forceAdjust();
                     });
@@ -220,7 +226,9 @@ angular.module('monospaced.elastic', [])
                         forceAdjust();
                     });
 
-                    $timeout(function () { adjust }, 5000);
+                    $timeout(function () {
+                        adjust;
+                    }, 5000);
 
                     /*
                      * destroy
