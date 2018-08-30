@@ -206,7 +206,7 @@ angular.module('monospaced.elastic', [])
                     };
 
                     if (msdElasticProvider.getNgZone()) {
-                        msdElasticProvider.getNgZone().runOutsideAngular(() => {
+                        msdElasticProvider.getNgZone().runOutsideAngular(function () {
                             listen();
                         });
                     } else {
