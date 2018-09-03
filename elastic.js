@@ -216,7 +216,11 @@ angular.module('monospaced.elastic', [])
                         if (scope.maxHeight && scope.maxHeight != maxHeight) {
                             maxHeight = scope.maxHeight;
                         }
-                        return ngModel ? ngModel.$modelValue : null;
+                        if (attrs.ngModel) {
+                            return ngModel.$modelValue;
+                        } else {
+                            return scope.$eval(attrs.thyModel);
+                        }
                     }, function (newValue) {
                         forceAdjust();
                     });
