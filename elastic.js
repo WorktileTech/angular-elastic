@@ -32,7 +32,7 @@ angular.module('monospaced.elastic', [])
             'use strict';
 
             return {
-                // require: 'ngModel',
+                require: '?ngModel',
                 restrict: 'A, C',
                 link: function (scope, element, attrs, ngModel) {
 
